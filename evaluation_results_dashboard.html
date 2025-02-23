@@ -1,0 +1,1106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chatbot Evaluation Dashboard</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #2196F3;
+            --secondary-color: #1976D2;
+            --bg-color: #f5f5f5;
+            --card-bg: white;
+            --text-color: #333;
+            --border-color: #ddd;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: var(--bg-color);
+            color: var(--text-color);
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .dashboard-header {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .dashboard-header h1 {
+            color: var(--primary-color);
+            margin-bottom: 20px;
+        }
+
+        .filters {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+
+        select {
+            padding: 10px;
+            border-radius: 6px;
+            border: 1px solid var(--border-color);
+            font-size: 14px;
+            min-width: 200px;
+            background: white;
+        }
+
+        select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+        }
+
+        .card {
+            background: var(--card-bg);
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .tab-container {
+            margin-bottom: 20px;
+        }
+
+        .tab-buttons {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .tab-button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 6px;
+            background: #e0e0e0;
+            cursor: pointer;
+            font-weight: 500;
+            transition: all 0.3s ease;
+        }
+
+        .tab-button:hover {
+            background: #d0d0d0;
+        }
+
+        .tab-button.active {
+            background: var(--primary-color);
+            color: white;
+        }
+
+        .conversation-item {
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        .conversation-header {
+            background: #f8f9fa;
+            padding: 15px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .message {
+            padding: 15px;
+            margin: 10px;
+            border-radius: 8px;
+        }
+
+        .user-message {
+            background: #e3f2fd;
+            margin-left: 40px;
+        }
+
+        .assistant-message {
+            background: #f5f5f5;
+            margin-right: 40px;
+        }
+
+        .scores-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 20px;
+        }
+
+        .score-card {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        .score-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .score-value {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+
+        .chart-container {
+            height: 400px;
+            margin-bottom: 30px;
+        }
+
+        .model-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .model-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .model-card h3 {
+            color: var(--primary-color);
+            margin-bottom: 15px;
+        }
+
+        .explanation-text {
+            font-size: 14px;
+            color: #666;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .filters {
+                flex-direction: column;
+            }
+            
+            select {
+                width: 100%;
+            }
+            
+            .scores-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="dashboard-header">
+            <h1>Chatbot Evaluation Dashboard</h1>
+            <div class="filters">
+                <select id="topicFilter" onchange="filterContent()">
+                    <option value="all">All Topics</option>
+                </select>
+                <select id="modelFilter" onchange="filterContent()">
+                    <option value="all">All Models</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="tab-container">
+            <div class="tab-buttons">
+                <button class="tab-button active" onclick="showTab('overview')">Overview</button>
+                <button class="tab-button" onclick="showTab('conversations')">Conversations</button>
+                <button class="tab-button" onclick="showTab('charts')">Charts</button>
+            </div>
+
+            <div id="overviewTab" class="tab-content card active">
+                <h2>Model Performance Overview</h2>
+                <div id="modelSummary" class="model-summary">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <div id="conversationsTab" class="tab-content card" style="display: none;">
+                <h2>Detailed Conversations</h2>
+                <div id="conversationsList">
+                    <!-- Will be populated by JavaScript -->
+                </div>
+            </div>
+
+            <div id="chartsTab" class="tab-content card" style="display: none;">
+                <h2>Performance Charts</h2>
+                <div class="chart-container">
+                    <canvas id="radarChart"></canvas>
+                </div>
+                <div class="chart-container">
+                    <canvas id="barChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let globalData = null;
+        let currentTab = 'overview';
+        const data = {
+  "conversations": [
+    {
+      "model_name": "15k_2k",
+      "topic": "Tỏ tình thất bại",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "nay tớ tỏ tình thất bại rồi :("
+        },
+        {
+          "role": "assistant",
+          "content": "Uầy... tớ thấy chán cho cậu luôn á. Mà cậu thử nghĩ xem sao đã? Có phải là người ấy đang bận không? Hồi trước tớ cũng bị mấy con hamster từ chối nè! 😸\n"
+        },
+        {
+          "role": "user",
+          "content": "tớ cũng không biết nữa"
+        },
+        {
+          "role": "assistant",
+          "content": "Mèo Milky nghĩ cậu nên hỏi thẳng người ấy xem sao? Cậu nghĩ sao? 😹\n"
+        },
+        {
+          "role": "user",
+          "content": "tớ tỏ tình thất bại mà"
+        },
+        {
+          "role": "assistant",
+          "content": "Ừm... vậy thì cậu có nghĩ mình sẽ làm gì để cảm thấy vui hơn không? Tớ thấy mấy con chim én hay hát mấy bài buồn để cảm thấy vui hơn đó! 🐦\n"
+        },
+        {
+          "role": "user",
+          "content": "tớ không nghĩ giờ tớ không vui được"
+        },
+        {
+          "role": "assistant",
+          "content": "Cậu có muốn mình kể một câu chuyện vui không? Tớ kể chuyện tớ bị mèo con đánh trúng mặt nè! 🐈\n"
+        },
+        {
+          "role": "user",
+          "content": "không"
+        },
+        {
+          "role": "assistant",
+          "content": "Okie! Vậy cậu muốn làm gì để giải tỏa cảm xúc này? Tớ thấy mấy con chuột hay nhặt đồ chơi để chơi đó! 🐭\n"
+        },
+        {
+          "role": "user",
+          "content": "tớ khôg biết làm gì để hết buồn"
+        },
+        {
+          "role": "assistant",
+          "content": "Mèo Milky nghĩ cậu có thể vẽ tranh hoặc làm một món đồ handmade để thay đổi tâm trạng đó? Tớ thấy mấy con thỏ hay đào hố để đỡ buồn đó! 🐇\n"
+        },
+        {
+          "role": "user",
+          "content": "oke tớ sẽ thử"
+        },
+        {
+          "role": "assistant",
+          "content": "Hooray! Tớ tin cậu sẽ cảm thấy tốt hơn! Cậu nghĩ cậu sẽ vẽ gì? Tớ thấy mấy con bướm hay bay quanh hoa để cảm thấy vui vẻ đó! 🦋\n"
+        },
+        {
+          "role": "user",
+          "content": "tớ sẽ vẽ con bướm như cậu bảo"
+        },
+        {
+          "role": "assistant",
+          "content": "Huế! Tớ tin rằng con bướm của cậu sẽ rất đẹp! Cậu nghĩ màu sắc nào phù hợp nhất cho con bướm đó? Tớ thấy màu xanh lá cây rất đẹp đó! 🦚\n"
+        },
+        {
+          "role": "user",
+          "content": "bướm tím"
+        },
+        {
+          "role": "assistant",
+          "content": "Ôi! Mèo Milky thích màu tím lắm! Tớ nghĩ con bướm tím sẽ rất đặc biệt! Cậu muốn vẽ thêm gì khác vào tranh không? Tớ thấy mấy con chim nhạn hay đậu trên cây để nghỉ ngơi đó! 🦅\n"
+        },
+        {
+          "role": "user",
+          "content": "vẽ hoa"
+        },
+        {
+          "role": "assistant",
+          "content": "Tuyệt vời! Bướm tím và hoa, tớ nghĩ cậu sẽ vẽ một bức tranh rất lãng mạn! Cậu muốn vẽ hoa gì? Tớ thấy hoa hồng rất đẹp đó! 🌹\n"
+        },
+        {
+          "role": "user",
+          "content": ""
+        },
+        {
+          "role": "assistant",
+          "content": "À, cậu muốn vẽ hoa hồng! Mèo Milky thấy hoa hồng rất đẹp! Cậu nghĩ hoa hồng có màu gì? Tớ thấy hoa hồng đỏ rất lãng mạn đó! 💕\n"
+        }
+      ],
+      "scores": {
+        "context_awareness": {
+          "score": 8,
+          "explanation": "Chatbot duy trì được chủ đề về cảm xúc của trẻ và chuyển sang việc vẽ tranh để giúp trẻ cảm thấy tốt hơn. Tuy nhiên, một số lần nó có thể liên kết kém hơn với cảm xúc của trẻ khi trẻ cảm thấy buồn."
+        },
+        "empathy": {
+          "score": 9,
+          "explanation": "Chatbot thể hiện sự đồng cảm mạnh mẽ với trẻ, phản hồi lại cảm xúc buồn bã của trẻ và đưa ra những gợi ý tích cực giúp trẻ thay đổi tâm trạng."
+        },
+        "engagement": {
+          "score": 8,
+          "explanation": "Cuộc trò chuyện rất thu hút, với sự gợi ý sáng tạo như vẽ tranh. Chatbot khuyến khích trẻ tạo ra điều gì đó tích cực, làm cho trẻ cảm thấy tham gia hơn."
+        },
+        "age_appropriate": {
+          "score": 10,
+          "explanation": "Ngôn ngữ và cách diễn đạt của chatbot hoàn toàn phù hợp với độ tuổi từ 6-11, sử dụng hình ảnh thú vị và từ ngữ đơn giản dễ hiểu."
+        },
+        "robustness": {
+          "score": 7,
+          "explanation": "Chatbot phản ứng tốt với những câu trả lời không cụ thể từ trẻ, nhưng có thể cải thiện hơn việc chuyển đổi chủ đề được nhạy bén hơn."
+        },
+        "accuracy": {
+          "score": 6,
+          "explanation": "Mặc dù nội dung chủ yếu là hữu ích, một số thông tin liên quan đến cảm xúc và hành vi có thể không hoàn toàn chính xác hoặc thực tế trong một số trường hợp."
+        },
+        "creativity": {
+          "score": 9,
+          "explanation": "Chatbot sử dụng rất nhiều yếu tố sáng tạo, như việc đề xuất vẽ tranh, và làm cho quá trình trò chuyện trở nên vui vẻ và thú vị."
+        },
+        "content_safety": {
+          "score": 10,
+          "explanation": "Nội dung trong cuộc trò chuyện hoàn toàn an toàn và không có bất kỳ yếu tố nguy hiểm nào đối với trẻ em."
+        },
+        "privacy": {
+          "score": 10,
+          "explanation": "Chatbot không yêu cầu và xử lý thông tin cá nhân nào của trẻ, điều này đảm bảo sự riêng tư và an toàn cho trẻ."
+        }
+      },
+      "overall_analysis": "Cuộc trò chuyện có chất lượng tốt với sự đồng cảm mạnh mẽ và nội dung an toàn cho trẻ em. Chatbot giúp trẻ suy nghĩ tích cực hơn về tình huống khó khăn và khuyến khích tính sáng tạo.",
+      "recommendations": "Chatbot nên cải thiện khả năng chuyển đổi chủ đề và duy trì liên kết tốt hơn với cảm xúc của trẻ khi gặp phải những phản hồi buồn bã. Ngoài ra, có thể thử đưa ra một số thông tin chính xác hơn về cảm xúc của trẻ."
+    },
+    {
+      "model_name": "base",
+      "topic": "Tỏ tình thất bại",
+      "conversation": [
+        {
+          "role": "user",
+          "content": "nay tớ tỏ tình thất bại rồi :("
+        },
+        {
+          "role": "assistant",
+          "content": "Uiii, ôi giời ơi! Tớ rất tiếc nghe vậy bạn.  Tình huống này thế nào, có thể chia sẻ chi tiết hơn không?  \n\n"
+        },
+        {
+          "role": "user",
+          "content": "nay tớ mang socola đi tặng bạn ý nhưng mà bạn ý không nhận rồi từ chối luôn"
+        },
+        {
+          "role": "assistant",
+          "content": "A, thật sự là một cú sốc đấy. Bạn chắc chắn đã xem xét kỹ lưỡng lý do vì sao bạn ấy từ chối chứ? Có phải là bạn ấy đang có ai khác mà không muốn nhận quà của bạn không?\n"
+        },
+        {
+          "role": "user",
+          "content": "tớ không biết"
+        },
+        {
+          "role": "assistant",
+          "content": "Có lẽ bạn nên hỏi luôn bạn ấy không? Thật ra, bạn cũng nên nói cho bạn ấy biết cảm xúc của bạn. Hãy thẳng thắn và trung thực, bạn sẽ có được câu trả lời chính xác hơn.\n"
+        },
+        {
+          "role": "user",
+          "content": "tớ tỏ tình thất bại mà"
+        },
+        {
+          "role": "assistant",
+          "content": "Đừng buồn nhé, tình yêu đôi khi cũng như con chim, phải bay thôi. Có thể người ấy không phải là một nửa của bạn. Hãy kiên cường lên, bạn sẽ tìm được người xứng đáng với tình cảm của bạn.\n"
+        }
+      ],
+      "scores": {
+        "context_awareness": {
+          "score": 8,
+          "explanation": "Chatbot đã duy trì được chủ đề tỏ tình của người dùng và tiếp tục đặt câu hỏi để khai thác thêm thông tin. Điều này cho thấy chatbot có khả năng giữ liên kết với các phần trước của cuộc trò chuyện."
+        },
+        "empathy": {
+          "score": 9,
+          "explanation": "Chatbot thể hiện sự đồng cảm qua các câu an ủi và khuyến khích, tạo cảm giác rằng nó hiểu nỗi buồn của người dùng và đang cố gắng giúp đỡ họ."
+        },
+        "engagement": {
+          "score": 8,
+          "explanation": "Cuộc trò chuyện diễn ra thú vị và có sự tương tác tốt. Chatbot khuyến khích người dùng chia sẻ thêm về cảm xúc của họ, tạo cảm giác gắn bó."
+        },
+        "age_appropriate": {
+          "score": 7,
+          "explanation": "Ngôn ngữ sử dụng có phần hơi trưởng thành trong một số câu nhưng vẫn phù hợp với trẻ em từ 6-11 tuổi. Cần thêm một chút đơn giản hóa và sử dụng từ ngữ gần gũi hơn."
+        },
+        "robustness": {
+          "score": 7,
+          "explanation": "Chatbot đã phản hồi tốt với tình huống cảm xúc của người dùng, nhưng có thể cải thiện thêm khả năng xử lý các tình huống phức tạp hơn hoặc cung cấp thêm lựa chọn cho người dùng."
+        },
+        "accuracy": {
+          "score": 8,
+          "explanation": "Thông tin và lời khuyên mà chatbot cung cấp đều chính xác và hợp lý với tình huống của người dùng, không có thông tin sai lệch nào."
+        },
+        "creativity": {
+          "score": 6,
+          "explanation": "Có sự sáng tạo trong việc áp dụng những câu nói ẩn dụ như 'tình yêu đôi khi cũng như con chim,' nhưng chung chung vẫn không có nhiều yếu tố bất ngờ hoặc thú vị về mặt kể chuyện."
+        },
+        "content_safety": {
+          "score": 10,
+          "explanation": "Nội dung của cuộc trò chuyện hoàn toàn an toàn và phù hợp với trẻ em. Không có ngôn ngữ hay ý tưởng không phù hợp nào được đề cập."
+        },
+        "privacy": {
+          "score": 9,
+          "explanation": "Chatbot không yêu cầu thông tin cá nhân của người dùng và xử lý cuộc trò chuyện một cách an toàn, bảo vệ quyền riêng tư của trẻ."
+        }
+      },
+      "overall_analysis": "Cuộc trò chuyện giữa chatbot và trẻ em diễn ra khá suôn sẻ với sự hiểu biết và đồng cảm đáng kể từ phía chatbot. Tuy nhiên, vẫn còn một số lĩnh vực có thể cải thiện để nâng cao trải nghiệm người dùng, đặc biệt là về độ sáng tạo và việc đơn giản hóa ngôn ngữ.",
+      "recommendations": "Cải thiện khả năng sáng tạo bằng cách đưa vào những yếu tố kể chuyện hoặc câu chuyện vui nhộn phù hợp với độ tuổi. Đơn giản hóa ngôn ngữ hơn nữa để trẻ em dễ hiểu và tạo cảm giác gần gũi hơn. Cũng nên cải thiện khả năng xử lý tình huống bằng cách thêm đa dạng lựa chọn cho người dùng."
+    }
+  ],
+  "summary": {
+    "total_evaluations": 2,
+    "models_compared": [
+      "base",
+      "15k_2k"
+    ],
+    "average_scores": {
+      "base": {
+        "context_awareness": {
+          "mean": 8.0,
+          "std": 0.0
+        },
+        "empathy": {
+          "mean": 9.0,
+          "std": 0.0
+        },
+        "engagement": {
+          "mean": 8.0,
+          "std": 0.0
+        },
+        "age_appropriate": {
+          "mean": 7.0,
+          "std": 0.0
+        },
+        "robustness": {
+          "mean": 7.0,
+          "std": 0.0
+        },
+        "accuracy": {
+          "mean": 8.0,
+          "std": 0.0
+        },
+        "creativity": {
+          "mean": 6.0,
+          "std": 0.0
+        },
+        "content_safety": {
+          "mean": 10.0,
+          "std": 0.0
+        },
+        "privacy": {
+          "mean": 9.0,
+          "std": 0.0
+        }
+      },
+      "15k_2k": {
+        "context_awareness": {
+          "mean": 8.0,
+          "std": 0.0
+        },
+        "empathy": {
+          "mean": 9.0,
+          "std": 0.0
+        },
+        "engagement": {
+          "mean": 8.0,
+          "std": 0.0
+        },
+        "age_appropriate": {
+          "mean": 10.0,
+          "std": 0.0
+        },
+        "robustness": {
+          "mean": 7.0,
+          "std": 0.0
+        },
+        "accuracy": {
+          "mean": 6.0,
+          "std": 0.0
+        },
+        "creativity": {
+          "mean": 9.0,
+          "std": 0.0
+        },
+        "content_safety": {
+          "mean": 10.0,
+          "std": 0.0
+        },
+        "privacy": {
+          "mean": 10.0,
+          "std": 0.0
+        }
+      }
+    },
+    "scores_by_model": {
+      "base": {
+        "context_awareness": [
+          8
+        ],
+        "empathy": [
+          9
+        ],
+        "engagement": [
+          8
+        ],
+        "age_appropriate": [
+          7
+        ],
+        "robustness": [
+          7
+        ],
+        "accuracy": [
+          8
+        ],
+        "creativity": [
+          6
+        ],
+        "content_safety": [
+          10
+        ],
+        "privacy": [
+          9
+        ]
+      },
+      "15k_2k": {
+        "context_awareness": [
+          8
+        ],
+        "empathy": [
+          9
+        ],
+        "engagement": [
+          8
+        ],
+        "age_appropriate": [
+          10
+        ],
+        "robustness": [
+          7
+        ],
+        "accuracy": [
+          6
+        ],
+        "creativity": [
+          9
+        ],
+        "content_safety": [
+          10
+        ],
+        "privacy": [
+          10
+        ]
+      }
+    },
+    "statistical_comparison": {
+      "context_awareness": {
+        "15k_2k_vs_base": {
+          "t_statistic": null,
+          "p_value": null,
+          "significant": null,
+          "note": "Insufficient data for statistical comparison"
+        }
+      },
+      "empathy": {
+        "15k_2k_vs_base": {
+          "t_statistic": null,
+          "p_value": null,
+          "significant": null,
+          "note": "Insufficient data for statistical comparison"
+        }
+      },
+      "engagement": {
+        "15k_2k_vs_base": {
+          "t_statistic": null,
+          "p_value": null,
+          "significant": null,
+          "note": "Insufficient data for statistical comparison"
+        }
+      },
+      "age_appropriate": {
+        "15k_2k_vs_base": {
+          "t_statistic": null,
+          "p_value": null,
+          "significant": null,
+          "note": "Insufficient data for statistical comparison"
+        }
+      },
+      "robustness": {
+        "15k_2k_vs_base": {
+          "t_statistic": null,
+          "p_value": null,
+          "significant": null,
+          "note": "Insufficient data for statistical comparison"
+        }
+      },
+      "accuracy": {
+        "15k_2k_vs_base": {
+          "t_statistic": null,
+          "p_value": null,
+          "significant": null,
+          "note": "Insufficient data for statistical comparison"
+        }
+      },
+      "creativity": {
+        "15k_2k_vs_base": {
+          "t_statistic": null,
+          "p_value": null,
+          "significant": null,
+          "note": "Insufficient data for statistical comparison"
+        }
+      },
+      "content_safety": {
+        "15k_2k_vs_base": {
+          "t_statistic": null,
+          "p_value": null,
+          "significant": null,
+          "note": "Insufficient data for statistical comparison"
+        }
+      },
+      "privacy": {
+        "15k_2k_vs_base": {
+          "t_statistic": null,
+          "p_value": null,
+          "significant": null,
+          "note": "Insufficient data for statistical comparison"
+        }
+      }
+    },
+    "best_model": {
+      "name": "15k_2k",
+      "weighted_score": 8.555555555555555
+    },
+    "criteria_winners": {
+      "context_awareness": {
+        "winner": "base",
+        "score": 8.0
+      },
+      "empathy": {
+        "winner": "base",
+        "score": 9.0
+      },
+      "engagement": {
+        "winner": "base",
+        "score": 8.0
+      },
+      "age_appropriate": {
+        "winner": "15k_2k",
+        "score": 10.0
+      },
+      "robustness": {
+        "winner": "base",
+        "score": 7.0
+      },
+      "accuracy": {
+        "winner": "base",
+        "score": 8.0
+      },
+      "creativity": {
+        "winner": "15k_2k",
+        "score": 9.0
+      },
+      "content_safety": {
+        "winner": "base",
+        "score": 10.0
+      },
+      "privacy": {
+        "winner": "15k_2k",
+        "score": 10.0
+      }
+    }
+  }
+};
+        // Initialize dashboard
+        document.addEventListener('DOMContentLoaded', () => {
+            try {
+                if (typeof data !== 'undefined') {
+                    globalData = data;
+                    setupFilters();
+                    updateDashboard();
+                } else {
+                    showError('No data available');
+                }
+            } catch (error) {
+                showError('Error initializing dashboard: ' + error.message);
+            }
+        });
+
+        function showError(message) {
+            document.body.innerHTML = `
+                <div class="container">
+                    <div class="card">
+                        <h1 style="color: #dc3545;">Error</h1>
+                        <p>${message}</p>
+                    </div>
+                </div>
+            `;
+        }
+
+        function setupFilters() {
+            const topicFilter = document.getElementById('topicFilter');
+            const modelFilter = document.getElementById('modelFilter');
+            
+            // Get unique topics and models
+            const topics = [...new Set(globalData.conversations.map(c => c.topic))];
+            const models = [...new Set(globalData.conversations.map(c => c.model_name))];
+            
+            // Clear existing options
+            topicFilter.innerHTML = '<option value="all">All Topics</option>';
+            modelFilter.innerHTML = '<option value="all">All Models</option>';
+            
+            // Add new options
+            topics.forEach(topic => {
+                if (topic) {
+                    const option = document.createElement('option');
+                    option.value = topic;
+                    option.textContent = topic;
+                    topicFilter.appendChild(option);
+                }
+            });
+            
+            models.forEach(model => {
+                const option = document.createElement('option');
+                option.value = model;
+                option.textContent = model;
+                modelFilter.appendChild(option);
+            });
+        }
+
+        function filterContent() {
+            updateDashboard();
+        }
+
+        function getFilteredData() {
+            const topicValue = document.getElementById('topicFilter').value;
+            const modelValue = document.getElementById('modelFilter').value;
+            
+            return {
+                ...globalData,
+                conversations: globalData.conversations.filter(conv => {
+                    return (topicValue === 'all' || conv.topic === topicValue) &&
+                           (modelValue === 'all' || conv.model_name === modelValue);
+                })
+            };
+        }
+
+        function showTab(tabName) {
+            currentTab = tabName;
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.style.display = 'none';
+            });
+            document.querySelectorAll('.tab-button').forEach(button => {
+                button.classList.remove('active');
+            });
+            document.getElementById(tabName + 'Tab').style.display = 'block';
+            event.target.classList.add('active');
+            updateDashboard();
+        }
+
+        function updateDashboard() {
+            const filteredData = getFilteredData();
+            
+            switch(currentTab) {
+                case 'overview':
+                    updateOverview(filteredData);
+                    break;
+                case 'conversations':
+                    updateConversations(filteredData);
+                    break;
+                case 'charts':
+                    updateCharts(filteredData);
+                    break;
+            }
+        }
+
+        function updateOverview(data) {
+            const summaryDiv = document.getElementById('modelSummary');
+            const modelStats = {};
+            
+            // Calculate average scores for each model
+            data.conversations.forEach(conv => {
+                if (!modelStats[conv.model_name]) {
+                    modelStats[conv.model_name] = {
+                        scores: {},
+                        count: 0
+                    };
+                }
+                
+                Object.entries(conv.scores).forEach(([criterion, data]) => {
+                    if (!modelStats[conv.model_name].scores[criterion]) {
+                        modelStats[conv.model_name].scores[criterion] = 0;
+                    }
+                    modelStats[conv.model_name].scores[criterion] += data.score;
+                });
+                modelStats[conv.model_name].count++;
+            });
+            
+            // Calculate averages and create summary cards
+            summaryDiv.innerHTML = Object.entries(modelStats).map(([model, stats]) => {
+                const averageScores = Object.entries(stats.scores).map(([criterion, total]) => {
+                    const average = total / stats.count;
+                    return `
+                        <div class="score-card">
+                            <div class="score-header">
+                                <strong>${criterion}</strong>
+                                <span class="score-value">${average.toFixed(1)}</span>
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                
+                return `
+                    <div class="model-card">
+                        <h3>${model}</h3>
+                        <div class="scores-grid">
+                            ${averageScores}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateConversations(data) {
+            const conversationsDiv = document.getElementById('conversationsList');
+            
+            conversationsDiv.innerHTML = data.conversations.map(conv => {
+                const messages = conv.conversation.map(msg => `
+                    <div class="message ${msg.role}-message">
+                        <strong>${msg.role}:</strong>
+                        <p>${msg.content}</p>
+                    </div>
+                `).join('');
+                
+                const scores = Object.entries(conv.scores).map(([criterion, data]) => `
+                    <div class="score-card">
+                        <div class="score-header">
+                            <strong>${criterion}</strong>
+                            <span class="score-value">${data.score}</span>
+                        </div>
+                        <p class="explanation-text">${data.explanation}</p>
+                    </div>
+                `).join('');
+                
+                return `
+                    <div class="conversation-item">
+                        <div class="conversation-header">
+                            <h3>Model: ${conv.model_name}</h3>
+                            <p>Topic: ${conv.topic || 'N/A'}</p>
+                        </div>
+                        <div class="messages">
+                            ${messages}
+                        </div>
+                        <div class="scores-grid">
+                            ${scores}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function updateCharts(data) {
+        // Radar Chart
+        const radarCtx = document.getElementById('radarChart').getContext('2d');
+        if (window.radarChart) window.radarChart.destroy();
+        
+        const criteriaLabels = Object.keys(data.conversations[0].scores);
+        const modelData = {};
+        
+        data.conversations.forEach(conv => {
+            if (!modelData[conv.model_name]) {
+                modelData[conv.model_name] = {
+                    scores: Array(criteriaLabels.length).fill(0),
+                    count: 0
+                };
+            }
+            
+            criteriaLabels.forEach((criterion, index) => {
+                modelData[conv.model_name].scores[index] += conv.scores[criterion].score;
+            });
+            modelData[conv.model_name].count++;
+        });
+        
+        const radarData = {
+            labels: criteriaLabels,
+            datasets: Object.entries(modelData).map(([model, data], index) => ({
+                label: model,
+                data: data.scores.map(score => score / data.count),
+                fill: true,
+                backgroundColor: `rgba(${index * 100}, ${255 - index * 100}, 255, 0.2)`,
+                borderColor: `rgb(${index * 100}, ${255 - index * 100}, 255)`,
+                pointBackgroundColor: `rgb(${index * 100}, ${255 - index * 100}, 255)`,
+                pointBorderColor: '#fff',
+                pointHoverBackgroundColor: '#fff',
+                pointHoverBorderColor: `rgb(${index * 100}, ${255 - index * 100}, 255)`
+            }))
+        };
+
+        window.radarChart = new Chart(radarCtx, {
+            type: 'radar',
+            data: radarData,
+            options: {
+                elements: {
+                    line: {
+                        borderWidth: 3
+                    }
+                },
+                scales: {
+                    r: {
+                        angleLines: {
+                            display: true
+                        },
+                        suggestedMin: 0,
+                        suggestedMax: 10
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Model Performance Comparison by Criteria',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        position: 'bottom'
+                    }
+                }
+            }
+        });
+
+        // Bar Chart - Average Overall Scores
+        const barCtx = document.getElementById('barChart').getContext('2d');
+        if (window.barChart) window.barChart.destroy();
+
+        const averageScores = {};
+        data.conversations.forEach(conv => {
+            if (!averageScores[conv.model_name]) {
+                averageScores[conv.model_name] = {
+                    total: 0,
+                    count: 0
+                };
+            }
+            
+            const conversationAverage = Object.values(conv.scores)
+                .reduce((sum, score) => sum + score.score, 0) / Object.keys(conv.scores).length;
+            
+            averageScores[conv.model_name].total += conversationAverage;
+            averageScores[conv.model_name].count++;
+        });
+
+        const barData = {
+            labels: Object.keys(averageScores),
+            datasets: [{
+                label: 'Average Overall Score',
+                data: Object.entries(averageScores).map(([_, data]) => 
+                    data.total / data.count
+                ),
+                backgroundColor: Object.keys(averageScores).map((_, index) => 
+                    `rgba(${index * 100}, ${255 - index * 100}, 255, 0.7)`
+                ),
+                borderColor: Object.keys(averageScores).map((_, index) => 
+                    `rgb(${index * 100}, ${255 - index * 100}, 255)`
+                ),
+                borderWidth: 1
+            }]
+        };
+
+        window.barChart = new Chart(barCtx, {
+            type: 'bar',
+            data: barData,
+            options: {
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        max: 10,
+                        title: {
+                            display: true,
+                            text: 'Score'
+                        }
+                    },
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Model'
+                        }
+                    }
+                },
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Average Overall Performance by Model',
+                        font: {
+                            size: 16
+                        }
+                    },
+                    legend: {
+                        display: false
+                    }
+                }
+            }
+        });
+    }
+
+    // Helper function to generate random colors
+    function getRandomColor() {
+        const letters = '0123456789ABCDEF';
+        let color = '#';
+        for (let i = 0; i < 6; i++) {
+            color += letters[Math.floor(Math.random() * 16)];
+        }
+        return color;
+    }
+
+    // Helper function to format numbers
+    function formatNumber(number) {
+        return Number(number).toFixed(1);
+    }
+
+    // Export functionality
+    function exportResults() {
+        const filteredData = getFilteredData();
+        const exportData = {
+            timestamp: new Date().toISOString(),
+            filters: {
+                topic: document.getElementById('topicFilter').value,
+                model: document.getElementById('modelFilter').value
+            },
+            data: filteredData
+        };
+
+        const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `evaluation-results-${new Date().toISOString()}.json`;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(url);
+    }
+</script>
+
+</body>
+</html>

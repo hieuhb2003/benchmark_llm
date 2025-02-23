@@ -1,0 +1,8 @@
+.env
+sample_input.json
+evaluation_results.json
+evaluation_results_summary.json
+evaluation_results_summary_viz_scores.png
+evaluation_results_summary_viz_heatmap.png
+evaluation_results_dashboard.html_scores.png
+evaluation_results_dashboard.html_heatmap.png
