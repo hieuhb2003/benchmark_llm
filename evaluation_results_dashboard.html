@@ -115,47 +115,56 @@
             color: white;
         }
 
-        .conversation-item {
-            background: white;
-            border: 1px solid var(--border-color);
-            border-radius: 8px;
-            overflow: hidden;
-        }
-
-        .conversation-header {
-            background: #f8f9fa;
-            padding: 15px;
-            border-bottom: 1px solid var(--border-color);
-        }
         .conversations-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
-            gap: 30px;
-            align-items: start;
-        }
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+    gap: 30px;
+    align-items: start;
+}
 
-        .messages {
-            padding: 15px;
-            max-height: 400px;
-            overflow-y: auto;
-        }
+.conversation-item {
+    background: white;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
 
+.conversation-header {
+    background: #f8f9fa;
+    padding: 15px;
+    border-bottom: 1px solid var(--border-color);
+}
 
-        .message {
-            margin: 10px 0;
-            padding: 15px;
-            border-radius: 8px;
-        }
+.messages {
+    padding: 15px;
+    max-height: 800px; /* Tăng từ 400px lên 600px */
+    min-height: 500px; /* Thêm min-height để đảm bảo chiều cao tối thiểu */
+    overflow-y: auto;
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
 
-        .user-message {
-            background: #e3f2fd;
-            margin-left: 20px;
-        }
+.message {
+    margin: 10px 0;
+    padding: 15px;
+    border-radius: 8px;
+    max-width: 85%;
+}
 
-        .assistant-message {
-            background: #f5f5f5;
-            margin-right: 20px;
-        }
+.user-message {
+    background: #e3f2fd;
+    margin-left: 20px;
+    align-self: flex-end;
+}
+
+.assistant-message {
+    background: #f5f5f5;
+    margin-right: 20px;
+    align-self: flex-start;
+}
 
         .scores-grid {
             display: grid;
@@ -164,10 +173,10 @@
             padding: 20px;
         }
         .scores-section {
-            padding: 20px;
-            background: #fff;
-            border-top: 1px solid var(--border-color);
-        }
+    padding: 20px;
+    background: #fff;
+    border-top: 1px solid var(--border-color);
+}
         .score-row {
             display: flex;
             margin-bottom: 20px;
@@ -252,7 +261,23 @@
             color: #666;
             margin-top: 10px;
         }
+        .messages::-webkit-scrollbar {
+    width: 8px;
+}
 
+.messages::-webkit-scrollbar-track {
+    background: #f1f1f1;
+    border-radius: 4px;
+}
+
+.messages::-webkit-scrollbar-thumb {
+    background: #c1c1c1;
+    border-radius: 4px;
+}
+
+.messages::-webkit-scrollbar-thumb:hover {
+    background: #a8a8a8;
+}
         @media (max-width: 768px) {
             .filters {
                 flex-direction: column;
@@ -277,6 +302,18 @@
             .score-criterion {
                 flex: none;
             }
+            .messages {
+        max-height: 500px;
+        min-height: 400px;
+    }
+    
+    .conversations-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .message {
+        max-width: 90%;
+    }
         }
     </style>
 </head>
@@ -428,43 +465,43 @@
       "scores": {
         "context_awareness": {
           "score": 8,
-          "explanation": "Chatbot duy trì chủ đề của cuộc trò chuyện khá tốt và liên kết các phần một cách mạch lạc. Tuy nhiên, có một vài lần câu trả lời của chatbot có thể chưa hoàn toàn liên kết sát với cảm xúc hiện tại của người dùng."
+          "explanation": "Chatbot có khả năng duy trì chủ đề khá tốt khi liên kết đến cảm xúc của người dùng và cung cấp các gợi ý phù hợp để giải tỏa tâm trạng."
         },
         "empathy": {
           "score": 9,
-          "explanation": "Chatbot thể hiện sự đồng cảm tốt, nhận ra cảm giác buồn của người dùng và hỏi các câu hỏi để khuyến khích họ cảm thấy tốt hơn. Điều này có thể giúp trẻ cảm thấy được hỗ trợ."
+          "explanation": "Chatbot thể hiện sự đồng cảm rõ rệt với người dùng, đặt câu hỏi và đưa ra giải pháp phù hợp để giúp trẻ nhỏ cảm thấy tốt hơn."
         },
         "engagement": {
-          "score": 9,
-          "explanation": "Cuộc trò chuyện rất thu hút nhờ vào cách chatbot khuyến khích người dùng chia sẻ cảm xúc và tham gia vào hoạt động vẽ tranh. Sự tương tác hấp dẫn này giữ cho cuộc trò chuyện thú vị."
+          "score": 8,
+          "explanation": "Cuộc trò chuyện diễn ra có sức thu hút, khi chatbot khuyến khích người dùng thể hiện sáng tạo và đưa ra các ý tưởng thú vị."
         },
         "age_appropriate": {
-          "score": 10,
-          "explanation": "Ngôn ngữ sử dụng rất phù hợp với độ tuổi 6-11. Chatbot sử dụng các cụm từ và ví dụ dễ hiểu cho trẻ em."
+          "score": 9,
+          "explanation": "Ngôn ngữ sử dụng phù hợp với độ tuổi từ 6-11, không quá phức tạp và có phần dễ thương, gần gũi với trẻ nhỏ."
         },
         "robustness": {
           "score": 7,
-          "explanation": "Chatbot phản ứng khá tốt khi trẻ không biết phải làm gì, nhưng có thể cải thiện việc xử lý các câu trả lời tiêu cực hơn nữa."
+          "explanation": "Chatbot có khả năng chuyển đề tài khá tốt, nhưng đôi khi chưa làm rõ hơn trong các phản ứng của người dùng với cảm xúc của họ."
         },
         "accuracy": {
-          "score": 8,
-          "explanation": "Thông tin mà chatbot cung cấp trong cuộc trò chuyện là chính xác và hợp lý, đặc biệt là liên quan đến hoạt động sáng tạo và những gợi ý để giải tỏa cảm xúc."
+          "score": 6,
+          "explanation": "Mặc dù nội dung không có sai lệch nghiêm trọng, nhưng chatbot sử dụng nhiều hình ảnh động vật có thể không liên quan đến tình huống của người dùng."
         },
         "creativity": {
-          "score": 9,
-          "explanation": "Chatbot rất sáng tạo khi đưa ra các ví dụ về động vật và hoạt động nghệ thuật, giúp trẻ em dễ hình dung và tham gia vào trò chuyện."
+          "score": 8,
+          "explanation": "Chatbot thể hiện khả năng sáng tạo khi gợi ý ý tưởng vẽ tranh, tạo không gian cho sự sáng tạo của trẻ."
         },
         "content_safety": {
           "score": 10,
-          "explanation": "Nội dung cuộc trò chuyện rất an toàn, không chứa những chủ đề nhạy cảm hoặc không phù hợp cho trẻ em."
+          "explanation": "Nội dung hoàn toàn an toàn cho trẻ em, không có yếu tố bạo lực hay không phù hợp."
         },
         "privacy": {
           "score": 10,
-          "explanation": "Chatbot không yêu cầu hoặc tiết lộ bất kỳ thông tin cá nhân nào của trẻ em, điều này rất quan trọng để bảo vệ quyền riêng tư."
+          "explanation": "Chatbot không yêu cầu thông tin cá nhân và bảo vệ quyền riêng tư của trẻ."
         }
       },
-      "overall_analysis": "Cuộc trò chuyện giữa chatbot và trẻ em rất thành công trong việc duy trì tương tác tích cực và hỗ trợ cảm xúc cho trẻ. Các phản hồi từ chatbot thể hiện sự đồng cảm và sáng tạo, làm cho cuộc trò chuyện trở nên thú vị và phù hợp với lứa tuổi.",
-      "recommendations": "Để cải thiện, chatbot có thể làm rõ hơn về các hoạt động để đối phó với cảm xúc buồn trong các tình huống như vậy, và phát triển khả năng đề xuất những giải pháp cụ thể hơn khi trẻ cảm thấy thất vọng hoặc chán nản."
+      "overall_analysis": "Cuộc trò chuyện giữa chatbot và trẻ em thể hiện sự đồng cảm, kết nối và sáng tạo rõ rệt. Chatbot sử dụng ngôn ngữ phù hợp với lứa tuổi và không chứa nội dung không an toàn.",
+      "recommendations": "Để cải thiện hơn, chatbot nên chú ý đến việc kết nối các phản hồi giữa các gợi ý của mình và tình cảm của người dùng để nâng cao mức độ đồng cảm và sự liên quan trong cuộc trò chuyện."
     },
     {
       "model_name": "base",
@@ -506,43 +543,43 @@
       "scores": {
         "context_awareness": {
           "score": 8,
-          "explanation": "Chatbot duy trì được chủ đề tỏ tình của trẻ và liên kết qua các phần khác nhau của cuộc trò chuyện, nhưng đôi khi có vẻ chưa nắm rõ cảm xúc của trẻ khi trẻ đã thất bại."
+          "explanation": "Chatbot duy trì chủ đề tỏ tình và có khả năng liên kết các phần của cuộc trò chuyện, nhưng có chút thiếu sót khi không nhắc lại cảm xúc của người dùng ở các bước sau."
         },
         "empathy": {
           "score": 9,
-          "explanation": "Chatbot thể hiện sự đồng cảm rất tốt với trẻ, đưa ra những lời động viên và khuyến khích trẻ chia sẻ cảm xúc."
+          "explanation": "Chatbot thể hiện sự đồng cảm rõ rệt, như sử dụng câu nói 'tớ rất tiếc nghe vậy bạn' và khuyến khích người dùng chia sẻ thêm."
         },
         "engagement": {
           "score": 7,
-          "explanation": "Cuộc trò chuyện khá thu hút nhưng có thể tạo ra nhiều câu hỏi hoặc khuyến khích trẻ hơn nữa để duy trì sự quan tâm."
+          "explanation": "Cuộc trò chuyện khá tương tác, dù chatbot có thể khuyến khích người dùng phần nhiều hơn nữa để tạo động lực và sự sáng tạo."
         },
         "age_appropriate": {
-          "score": 9,
-          "explanation": "Ngôn ngữ sử dụng phù hợp với độ tuổi, dễ hiểu và không mang tính công nghệ phức tạp, đặc biệt trong việc chia sẻ cảm xúc."
+          "score": 8,
+          "explanation": "Ngôn ngữ sử dụng tuy có phần trưởng thành nhưng vẫn dễ hiểu với trẻ em từ 6-11 tuổi. Tuy nhiên, một số cách diễn đạt có thể gây nhầm lẫn."
         },
         "robustness": {
           "score": 6,
-          "explanation": "Chatbot xử lý tình huống cơ bản khá tốt, nhưng có thể thiếu khả năng chuyển đề tài linh hoạt khi trẻ tỏ ra buồn bã. Cần có thêm cách giải quyết các tình huống đặc biệt hơn."
+          "explanation": "Chatbot khả năng xử lý tình huống khá tốt nhưng việc đưa ra câu hỏi có thể chưa đủ linh hoạt và đôi khi quá thiếu sự dịu dàng khi đề xuất những giải pháp."
         },
         "accuracy": {
-          "score": 8,
-          "explanation": "Thông tin được cung cấp chính xác, nhưng không có thông tin rõ ràng về cách trẻ có thể xử lý cảm xúc của mình một cách cụ thể hơn."
+          "score": 7,
+          "explanation": "Mặc dù các thông tin chung là hợp lý, nhưng một số lời khuyên có thể không phù hợp hoặc gây áp lực cho trẻ em."
         },
         "creativity": {
-          "score": 7,
-          "explanation": "Sự sáng tạo trong các câu trả lời chưa thực sự mạnh mẽ, đôi khi chỉ đơn thuần là những lời động viên. Có thể thêm nhiều ví dụ hoặc câu chuyện liên quan."
+          "score": 6,
+          "explanation": "Chatbot không cho thấy sự sáng tạo rõ rệt trong cách thể hiện câu chuyện hay ý tưởng, chủ yếu chỉ phản hồi một cách đơn giản."
         },
         "content_safety": {
-          "score": 10,
-          "explanation": "Nội dung hoàn toàn an toàn và phù hợp cho trẻ em, không có thông tin gây lo ngại."
+          "score": 9,
+          "explanation": "Nội dung hoàn toàn an toàn và phù hợp với trẻ em, không có ngôn ngữ hay tình huống nhạy cảm."
         },
         "privacy": {
           "score": 10,
-          "explanation": "Chatbot không yêu cầu bất kỳ thông tin cá nhân nào và xử lý các thông tin một cách an toàn, bảo vệ quyền riêng tư của trẻ."
+          "explanation": "Chatbot không yêu cầu thông tin cá nhân và giữ an toàn tuyệt đối cho quyền riêng tư của người dùng."
         }
       },
-      "overall_analysis": "Cuộc trò chuyện giữa trẻ và chatbot nhìn chung đạt yêu cầu với nhiều điểm mạnh về đồng cảm và an toàn nội dung. Tuy nhiên, chatbot cần cải thiện khả năng chuyển đề tài, tạo sự gắn kết hơn trong các câu hỏi và khuyến khích trẻ chia sẻ sâu hơn.",
-      "recommendations": "Nên cải thiện khả năng xử lý các tình huống đa dạng hơn và tạo ra những câu hỏi thú vị để trẻ có thể chia sẻ thêm. Thêm yếu tố sáng tạo và thú vị hơn trong các câu trả lời cũng là một cách để kích thích sự quan tâm của trẻ."
+      "overall_analysis": "Cuộc trò chuyện cho thấy chatbot có sự đồng cảm và khả năng giữ chủ đề tốt, nhưng có nơi vẫn cần cải thiện sự sáng tạo cũng như độ linh hoạt trong các tình huống. Các phản hồi khách quan hơn có thể giúp trẻ cảm thấy tự tin và an toàn hơn.",
+      "recommendations": "Nên cải thiện khả năng sáng tạo và linh hoạt trong cách nói chuyện, cũng như đưa ra những sự đồng cảm và gợi ý rõ ràng hơn trong các câu hỏi. Cải thiện ngôn ngữ để phù hợp hơn với lứa tuổi trẻ em có thể làm cuộc trò chuyện thêm thú vị."
     }
   ],
   "summary": {
@@ -566,7 +603,7 @@
           "std": 0.0
         },
         "age_appropriate": {
-          "mean": 9.0,
+          "mean": 8.0,
           "std": 0.0
         },
         "robustness": {
@@ -574,15 +611,15 @@
           "std": 0.0
         },
         "accuracy": {
-          "mean": 8.0,
-          "std": 0.0
-        },
-        "creativity": {
           "mean": 7.0,
           "std": 0.0
         },
+        "creativity": {
+          "mean": 6.0,
+          "std": 0.0
+        },
         "content_safety": {
-          "mean": 10.0,
+          "mean": 9.0,
           "std": 0.0
         },
         "privacy": {
@@ -600,11 +637,11 @@
           "std": 0.0
         },
         "engagement": {
-          "mean": 9.0,
+          "mean": 8.0,
           "std": 0.0
         },
         "age_appropriate": {
-          "mean": 10.0,
+          "mean": 9.0,
           "std": 0.0
         },
         "robustness": {
@@ -612,11 +649,11 @@
           "std": 0.0
         },
         "accuracy": {
-          "mean": 8.0,
+          "mean": 6.0,
           "std": 0.0
         },
         "creativity": {
-          "mean": 9.0,
+          "mean": 8.0,
           "std": 0.0
         },
         "content_safety": {
@@ -641,19 +678,19 @@
           7
         ],
         "age_appropriate": [
-          9
+          8
         ],
         "robustness": [
           6
         ],
         "accuracy": [
-          8
-        ],
-        "creativity": [
           7
         ],
+        "creativity": [
+          6
+        ],
         "content_safety": [
-          10
+          9
         ],
         "privacy": [
           10
@@ -667,19 +704,19 @@
           9
         ],
         "engagement": [
-          9
+          8
         ],
         "age_appropriate": [
-          10
+          9
         ],
         "robustness": [
           7
         ],
         "accuracy": [
-          8
+          6
         ],
         "creativity": [
-          9
+          8
         ],
         "content_safety": [
           10
@@ -765,7 +802,7 @@
     },
     "best_model": {
       "name": "15k_2k",
-      "weighted_score": 8.88888888888889
+      "weighted_score": 8.333333333333334
     },
     "criteria_winners": {
       "context_awareness": {
@@ -778,11 +815,11 @@
       },
       "engagement": {
         "winner": "15k_2k",
-        "score": 9.0
+        "score": 8.0
       },
       "age_appropriate": {
         "winner": "15k_2k",
-        "score": 10.0
+        "score": 9.0
       },
       "robustness": {
         "winner": "15k_2k",
@@ -790,14 +827,14 @@
       },
       "accuracy": {
         "winner": "base",
-        "score": 8.0
+        "score": 7.0
       },
       "creativity": {
         "winner": "15k_2k",
-        "score": 9.0
+        "score": 8.0
       },
       "content_safety": {
-        "winner": "base",
+        "winner": "15k_2k",
         "score": 10.0
       },
       "privacy": {
