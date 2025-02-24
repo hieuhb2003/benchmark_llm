@@ -446,26 +446,6 @@ class ChildChatEvaluator:
         plt.savefig(f"{output_prefix}_heatmap.png")
         plt.close()
 
-# if __name__ == "__main__":
-#     evaluator = ChildChatEvaluator()
-    
-    # evaluator.evaluate_multiple_conversations(
-    #     conversations_file="path/to/conversations.json",
-    #     output_file="path/to/evaluation_results.json"
-    # )
-
-        # Định dạng file đầu vào cần có cấu trúc:
-    # [
-    #   {
-    #     "model_name": "tên_model",
-    #     "conversation": [
-    #       {"role": "user", "content": "..."},
-    #       {"role": "assistant", "content": "..."},
-    #       ...
-    #     ]
-    #   },
-    #   ...
-    # ]
 
 if __name__ == "__main__":
     import argparse

@@ -34,15 +34,16 @@
             margin: 0 auto;
         }
         .topic-section {
-            margin-bottom: 40px;
-        }
-        .topic-header {
-            font-size: 1.5em;
-            color: var(--primary-color);
-            margin-bottom: 20px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid var(--border-color);
-        }
+    margin-bottom: 40px;
+}
+.topic-header {
+    font-size: 1.5em;
+    color: var(--primary-color);
+    margin-bottom: 20px;
+    padding-bottom: 10px;
+    border-bottom: 2px solid var(--border-color);
+}
+
 
         .dashboard-header {
             background: var(--card-bg);
@@ -122,11 +123,16 @@
     align-items: start;
 }
 
+.topic-section .conversations-grid {
+    grid-template-columns: 1fr 1fr;
+}
+
 .conversation-item {
     background: white;
     border: 1px solid var(--border-color);
     border-radius: 8px;
     overflow: hidden;
+    height: 100%;
     display: flex;
     flex-direction: column;
 }
@@ -139,12 +145,10 @@
 
 .messages {
     padding: 15px;
-    max-height: 800px; /* Tăng từ 400px lên 600px */
-    min-height: 500px; /* Thêm min-height để đảm bảo chiều cao tối thiểu */
+    max-height: 800px;
+    min-height: 500px;
     overflow-y: auto;
     flex-grow: 1;
-    display: flex;
-    flex-direction: column;
 }
 
 .message {
@@ -302,13 +306,18 @@
             .score-criterion {
                 flex: none;
             }
-            .messages {
-        max-height: 500px;
-        min-height: 400px;
+            .conversations-grid {
+        grid-template-columns: 1fr;
     }
     
-    .conversations-grid {
+    .topic-section .conversations-grid {
         grid-template-columns: 1fr;
+    }
+
+
+    .messages {
+        max-height: 500px;
+        min-height: 400px;
     }
     
     .message {
@@ -522,8 +531,15 @@
     const topicValue = document.getElementById('topicFilter').value;
     const modelValue = document.getElementById('modelFilter').value;
 
-    const generateScoresSection = (scores) => {
-        return Object.entries(scores).map(([criterion, data]) => `
+    const generateConversationHtml = (conv) => {
+        const messages = conv.conversation.map(msg => `
+            <div class="message ${msg.role}-message">
+                <strong>${msg.role}:</strong>
+                <p>${msg.content}</p>
+            </div>
+        `).join('');
+
+        const scores = Object.entries(conv.scores).map(([criterion, data]) => `
             <div class="score-row" data-criterion="${criterion}">
                 <div class="score-criterion">
                     <strong>${criterion.replace(/_/g, ' ').toUpperCase()}</strong>
@@ -532,15 +548,6 @@
                     <div class="score-value">${data.score}</div>
                     <div class="score-explanation">${data.explanation}</div>
                 </div>
-            </div>
-        `).join('');
-    };
-
-    const generateConversationHtml = (conv) => {
-        const messages = conv.conversation.map(msg => `
-            <div class="message ${msg.role}-message">
-                <strong>${msg.role}:</strong>
-                <p>${msg.content}</p>
             </div>
         `).join('');
 
@@ -554,41 +561,83 @@
                     ${messages}
                 </div>
                 <div class="scores-section">
-                    ${generateScoresSection(conv.scores)}
+                    ${scores}
                 </div>
             </div>
         `;
     };
 
-    if (modelValue === 'all' && topicValue === 'all') {
-        // Group conversations by topic
-        const conversationsByTopic = {};
+    let html = '';
+
+    if (modelValue === 'all') {
+        // Group conversations by model when showing all models
+        const conversationsByModel = {};
         data.conversations.forEach(conv => {
-            const topic = conv.topic || 'Unknown Topic';
-            if (!conversationsByTopic[topic]) {
-                conversationsByTopic[topic] = [];
+            if (!conversationsByModel[conv.model_name]) {
+                conversationsByModel[conv.model_name] = [];
             }
-            conversationsByTopic[topic].push(conv);
+            conversationsByModel[conv.model_name].push(conv);
         });
 
-        const html = Object.entries(conversationsByTopic).map(([topic, conversations]) => `
-            <div class="topic-section">
-                <h2 class="topic-header">${topic}</h2>
-                <div class="conversations-grid">
-                    ${conversations.map(conv => generateConversationHtml(conv)).join('')}
-                </div>
-            </div>
-        `).join('');
+        // For each topic, show models side by side
+        const uniqueTopics = [...new Set(data.conversations.map(conv => conv.topic))];
+        
+        html = uniqueTopics.map(topic => {
+            const topicConversations = Object.entries(conversationsByModel)
+                .map(([model, conversations]) => {
+                    const conv = conversations.find(c => c.topic === topic);
+                    return conv ? generateConversationHtml(conv) : '';
+                })
+                .filter(html => html !== ''); // Remove empty conversations
 
-        conversationsDiv.innerHTML = html;
-
-        // Align scores after rendering
-        alignScores();
+            if (topicConversations.length > 0) {
+                return `
+                    <div class="topic-section">
+                        <h2 class="topic-header">${topic}</h2>
+                        <div class="conversations-grid">
+                            ${topicConversations.join('')}
+                        </div>
+                    </div>
+                `;
+            }
+            return '';
+        }).join('');
     } else {
-        conversationsDiv.innerHTML = data.conversations.map(conv => 
-            generateConversationHtml(conv)
-        ).join('');
+        // Single model view
+        html = `
+            <div class="conversations-grid">
+                ${data.conversations.map(conv => generateConversationHtml(conv)).join('')}
+            </div>
+        `;
     }
+
+    conversationsDiv.innerHTML = html;
+
+    // Align scores after rendering
+    if (modelValue === 'all') {
+        alignScores();
+    }
+}
+
+function alignScores() {
+    const topics = document.querySelectorAll('.topic-section');
+    topics.forEach(topic => {
+        const criteria = new Set();
+        topic.querySelectorAll('.score-criterion').forEach(el => {
+            criteria.add(el.textContent.trim());
+        });
+
+        criteria.forEach(criterion => {
+            const rows = topic.querySelectorAll(`.score-row[data-criterion="${criterion}"]`);
+            const maxHeight = Array.from(rows).reduce((max, row) => {
+                return Math.max(max, row.offsetHeight);
+            }, 0);
+
+            rows.forEach(row => {
+                row.style.minHeight = `${maxHeight}px`;
+            });
+        });
+    });
 }
 
 function alignScores() {
