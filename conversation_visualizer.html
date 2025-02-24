@@ -117,7 +117,11 @@
             padding: 15px;
             border-bottom: 1px solid var(--border-color);
         }
-
+        .conversations-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 20px;
+        }
         .message {
             padding: 15px;
             margin: 10px;
@@ -205,6 +209,9 @@
             }
             
             .scores-grid {
+                grid-template-columns: 1fr;
+            }
+            .conversations-grid {
                 grid-template-columns: 1fr;
             }
         }
@@ -411,44 +418,76 @@
         }
 
         function updateConversations(data) {
-            const conversationsDiv = document.getElementById('conversationsList');
-            
-            conversationsDiv.innerHTML = data.conversations.map(conv => {
-                const messages = conv.conversation.map(msg => `
-                    <div class="message ${msg.role}-message">
-                        <strong>${msg.role}:</strong>
-                        <p>${msg.content}</p>
-                    </div>
-                `).join('');
-                
-                const scores = Object.entries(conv.scores).map(([criterion, data]) => `
-                    <div class="score-card">
-                        <div class="score-header">
-                            <strong>${criterion}</strong>
-                            <span class="score-value">${data.score}</span>
-                        </div>
-                        <p class="explanation-text">${data.explanation}</p>
-                    </div>
-                `).join('');
-                
-                return `
-                    <div class="conversation-item">
-                        <div class="conversation-header">
-                            <h3>Model: ${conv.model_name}</h3>
-                            <p>Topic: ${conv.topic || 'N/A'}</p>
-                        </div>
-                        <div class="messages">
-                            ${messages}
-                        </div>
-                        <div class="scores-grid">
-                            ${scores}
-                        </div>
-                    </div>
-                `;
-            }).join('');
+    const conversationsDiv = document.getElementById('conversationsList');
+    const topicValue = document.getElementById('topicFilter').value;
+    const modelValue = document.getElementById('modelFilter').value;
+    
+    // Group conversations by topic
+    const conversationsByTopic = {};
+    data.conversations.forEach(conv => {
+        const topic = conv.topic || 'Unknown Topic';
+        if (!conversationsByTopic[topic]) {
+            conversationsByTopic[topic] = [];
         }
+        conversationsByTopic[topic].push(conv);
+    });
 
-        let radarChart = null;
+    let html = '';
+
+    // Helper function to generate conversation HTML
+    const generateConversationHtml = (conv) => {
+        const messages = conv.conversation.map(msg => `
+            <div class="message ${msg.role}-message">
+                <strong>${msg.role}:</strong>
+                <p>${msg.content}</p>
+            </div>
+        `).join('');
+        
+        const scores = Object.entries(conv.scores).map(([criterion, data]) => `
+            <div class="score-card">
+                <div class="score-header">
+                    <strong>${criterion}</strong>
+                    <span class="score-value">${data.score}</span>
+                </div>
+                <p class="explanation-text">${data.explanation}</p>
+            </div>
+        `).join('');
+        
+        return `
+            <div class="conversation-item">
+                <div class="conversation-header">
+                    <h3>Model: ${conv.model_name}</h3>
+                    <p>Topic: ${conv.topic || 'N/A'}</p>
+                </div>
+                <div class="messages">
+                    ${messages}
+                </div>
+                <div class="scores-grid">
+                    ${scores}
+                </div>
+            </div>
+        `;
+    };
+
+    // Different layout based on filter selection
+    if (modelValue === 'all' && topicValue === 'all') {
+        // Display conversations side by side grouped by topic
+        html = Object.entries(conversationsByTopic).map(([topic, conversations]) => `
+            <div class="topic-section">
+                <h2 class="topic-header">${topic}</h2>
+                <div class="conversations-grid">
+                    ${conversations.map(conv => generateConversationHtml(conv)).join('')}
+                </div>
+            </div>
+        `).join('');
+    } else {
+        // Display conversations in a single column
+        html = data.conversations.map(conv => generateConversationHtml(conv)).join('');
+    }
+
+    conversationsDiv.innerHTML = html;
+}
+let radarChart = null;
 let barChart = null;
 
 function updateCharts(data) {
