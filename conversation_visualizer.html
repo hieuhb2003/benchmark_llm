@@ -444,44 +444,102 @@
             }).join('');
         }
 
-        function updateCharts(data) {
-        // Radar Chart
-        const radarCtx = document.getElementById('radarChart').getContext('2d');
-        if (window.radarChart) window.radarChart.destroy();
+        let radarChart = null;
+let barChart = null;
+
+function updateCharts(data) {
+    // Validate input data
+    if (!data || !data.conversations || !Array.isArray(data.conversations) || data.conversations.length === 0) {
+        console.error('Invalid or empty data provided to updateCharts');
+        return;
+    }
+
+    // Validate first conversation has scores
+    const firstConversation = data.conversations[0];
+    if (!firstConversation.scores || typeof firstConversation.scores !== 'object') {
+        console.error('First conversation does not have valid scores');
+        return;
+    }
+
+    const radarCtx = document.getElementById('radarChart');
+    const barCtx = document.getElementById('barChart');
+
+    if (!radarCtx || !barCtx) {
+        console.error('Could not find chart canvas elements');
+        return;
+    }
+
+    // Destroy existing charts properly
+    if (radarChart instanceof Chart) {
+        radarChart.destroy();
+    }
+    if (barChart instanceof Chart) {
+        barChart.destroy();
+    }
+    
+    try {
+        // Get all criteria from the first conversation's scores
+        const criteriaLabels = Object.keys(firstConversation.scores);
         
-        const criteriaLabels = Object.keys(data.conversations[0].scores);
-        const modelData = {};
+        // Calculate average scores for each model and criterion
+        const modelScores = {};
         
         data.conversations.forEach(conv => {
-            if (!modelData[conv.model_name]) {
-                modelData[conv.model_name] = {
-                    scores: Array(criteriaLabels.length).fill(0),
+            // Skip invalid conversations
+            if (!conv.model_name || !conv.scores) return;
+
+            if (!modelScores[conv.model_name]) {
+                modelScores[conv.model_name] = {
+                    totals: {},
                     count: 0
                 };
+                criteriaLabels.forEach(criterion => {
+                    modelScores[conv.model_name].totals[criterion] = 0;
+                });
             }
             
-            criteriaLabels.forEach((criterion, index) => {
-                modelData[conv.model_name].scores[index] += conv.scores[criterion].score;
+            criteriaLabels.forEach(criterion => {
+                // Check if score exists and is valid
+                if (conv.scores[criterion] && typeof conv.scores[criterion].score === 'number') {
+                    modelScores[conv.model_name].totals[criterion] += conv.scores[criterion].score;
+                }
             });
-            modelData[conv.model_name].count++;
+            modelScores[conv.model_name].count++;
         });
         
+        // Convert totals to averages
+        const models = Object.keys(modelScores);
+        
+        if (models.length === 0) {
+            console.error('No valid models found in data');
+            return;
+        }
+
         const radarData = {
             labels: criteriaLabels,
-            datasets: Object.entries(modelData).map(([model, data], index) => ({
-                label: model,
-                data: data.scores.map(score => score / data.count),
-                fill: true,
-                backgroundColor: `rgba(${index * 100}, ${255 - index * 100}, 255, 0.2)`,
-                borderColor: `rgb(${index * 100}, ${255 - index * 100}, 255)`,
-                pointBackgroundColor: `rgb(${index * 100}, ${255 - index * 100}, 255)`,
-                pointBorderColor: '#fff',
-                pointHoverBackgroundColor: '#fff',
-                pointHoverBorderColor: `rgb(${index * 100}, ${255 - index * 100}, 255)`
-            }))
+            datasets: models.map((model, index) => {
+                const averages = criteriaLabels.map(criterion => {
+                    const total = modelScores[model].totals[criterion];
+                    const count = modelScores[model].count;
+                    return count > 0 ? total / count : 0;
+                });
+                
+                return {
+                    label: model,
+                    data: averages,
+                    fill: true,
+                    backgroundColor: `rgba(${index * 100}, ${255 - index * 100}, 255, 0.2)`,
+                    borderColor: `rgb(${index * 100}, ${255 - index * 100}, 255)`,
+                    pointBackgroundColor: `rgb(${index * 100}, ${255 - index * 100}, 255)`,
+                    pointBorderColor: '#fff',
+                    pointHoverBackgroundColor: '#fff',
+                    pointHoverBorderColor: `rgb(${index * 100}, ${255 - index * 100}, 255)`
+                };
+            })
         };
 
-        window.radarChart = new Chart(radarCtx, {
+        // Create new radar chart
+        radarChart = new Chart(radarCtx, {
             type: 'radar',
             data: radarData,
             options: {
@@ -496,7 +554,10 @@
                             display: true
                         },
                         suggestedMin: 0,
-                        suggestedMax: 10
+                        suggestedMax: 10,
+                        ticks: {
+                            stepSize: 2
+                        }
                     }
                 },
                 plugins: {
@@ -514,44 +575,36 @@
             }
         });
 
-        // Bar Chart - Average Overall Scores
-        const barCtx = document.getElementById('barChart').getContext('2d');
-        if (window.barChart) window.barChart.destroy();
+        // Calculate overall average scores for each model
+        const overallScores = models.map(model => {
+            const validScores = criteriaLabels.map(criterion => {
+                const total = modelScores[model].totals[criterion];
+                const count = modelScores[model].count;
+                return count > 0 ? total / count : 0;
+            }).filter(score => !isNaN(score));
 
-        const averageScores = {};
-        data.conversations.forEach(conv => {
-            if (!averageScores[conv.model_name]) {
-                averageScores[conv.model_name] = {
-                    total: 0,
-                    count: 0
-                };
-            }
-            
-            const conversationAverage = Object.values(conv.scores)
-                .reduce((sum, score) => sum + score.score, 0) / Object.keys(conv.scores).length;
-            
-            averageScores[conv.model_name].total += conversationAverage;
-            averageScores[conv.model_name].count++;
+            return validScores.length > 0 
+                ? validScores.reduce((a, b) => a + b, 0) / validScores.length 
+                : 0;
         });
 
         const barData = {
-            labels: Object.keys(averageScores),
+            labels: models,
             datasets: [{
                 label: 'Average Overall Score',
-                data: Object.entries(averageScores).map(([_, data]) => 
-                    data.total / data.count
-                ),
-                backgroundColor: Object.keys(averageScores).map((_, index) => 
+                data: overallScores,
+                backgroundColor: models.map((_, index) => 
                     `rgba(${index * 100}, ${255 - index * 100}, 255, 0.7)`
                 ),
-                borderColor: Object.keys(averageScores).map((_, index) => 
+                borderColor: models.map((_, index) => 
                     `rgb(${index * 100}, ${255 - index * 100}, 255)`
                 ),
                 borderWidth: 1
             }]
         };
 
-        window.barChart = new Chart(barCtx, {
+        // Create new bar chart
+        barChart = new Chart(barCtx, {
             type: 'bar',
             data: barData,
             options: {
@@ -559,6 +612,9 @@
                     y: {
                         beginAtZero: true,
                         max: 10,
+                        ticks: {
+                            stepSize: 1
+                        },
                         title: {
                             display: true,
                             text: 'Score'
@@ -585,8 +641,11 @@
                 }
             }
         });
-    }
 
+    } catch (error) {
+        console.error('Error updating charts:', error);
+    }
+}
     // Helper function to generate random colors
     function getRandomColor() {
         const letters = '0123456789ABCDEF';
