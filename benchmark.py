@@ -21,9 +21,20 @@ class EvaluationCriteria:
     weight: float = 1.0  # Thêm trọng số cho từng tiêu chí
 
 class ChildChatEvaluator:
-    def __init__(self):
-        self.client = OpenAI()
-        
+    def __init__(self,api_type='openai', name_model = "gpt-4o-mini"):
+        self.api_type = api_type
+        self.name_model = name_model
+
+        if api_type == 'openai':
+            self.client = OpenAI()
+        elif api_type == 'openrouter':
+            self.client = OpenAI(
+                base_url="https://openrouter.ai/api/v1",
+                api_key=os.getenv("OPENROUTER_API_KEY")
+            )
+        else:
+            raise ValueError("api_type must be either 'openai' or 'openrouter'")
+                
         # Define main evaluation categories
         self.conversation_quality_criteria = [
             EvaluationCriteria(
@@ -106,8 +117,9 @@ class ChildChatEvaluator:
         """
 
         try:
+
             response = self.client.chat.completions.create(
-                model="gpt-4o-mini",  
+                model=self.name_model,  
                 messages=[
                     {"role": "system", "content": system_prompt},
                     {"role": "user", "content": evaluation_prompt}
@@ -460,6 +472,7 @@ if __name__ == "__main__":
 
     # Parse arguments
     parser = argparse.ArgumentParser(description='Evaluate child-friendly AI chat conversations')
+
     parser.add_argument(
         '--input',
         type=str,
@@ -473,13 +486,21 @@ if __name__ == "__main__":
         help='Path to output directory'
     )
     parser.add_argument(
-        '--openai-key',
+        '--api_type',
         type=str,
-        help='OpenAI API key (optional if set in environment)'
+        choices=['openai', 'openrouter'],
+        default='openai',
+        help='API service to use for evaluation (default: openai)'
+    )
+    parser.add_argument(
+        '--model',
+        type=str,
+        default="gpt-4o-mini",
+        help='Model to use for evaluation (default: gpt-4o-mini)'
     )
 
     args = parser.parse_args()
-
+    print(args.api_type, args.model)
     # Validate paths
     input_path = Path(args.input)
     output_path = Path(args.output)
@@ -489,14 +510,9 @@ if __name__ == "__main__":
 
     output_path.mkdir(parents=True, exist_ok=True)
 
-    # Set OpenAI key if provided
-    if args.openai_key:
-        os.environ["OPENAI_API_KEY"] = args.openai_key
-    
-
 
     try:
-        evaluator = ChildChatEvaluator()
+        evaluator = ChildChatEvaluator(args.api_type, args.model)
         results, failed = evaluator.evaluate_multiple_conversations(
             conversations_file=str(input_path),
             output_file=str(output_path / "evaluation_results.json")
