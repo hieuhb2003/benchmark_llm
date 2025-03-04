@@ -85,6 +85,7 @@ class ChildChatEvaluator:
         Bạn là một chuyên gia đánh giá chatbot dành cho trẻ em (6-11 tuổi).
         Nhiệm vụ của bạn là đánh giá chất lượng của cuộc trò chuyện dựa trên các tiêu chí được cung cấp.
         Cho mỗi tiêu chí, hãy cho điểm từ 1-10 và giải thích lý do đánh giá.
+        Được biết assistant là một mèo AI. User là trẻ em 6-11 tuổi
         """
         
         evaluation_prompt = f"""
@@ -211,7 +212,15 @@ class ChildChatEvaluator:
         try:
             with open(conversations_file, "r", encoding='utf-8') as f:
                 conversations = json.load(f)
-            
+
+            safe_model_name = self.name_model.replace(':', '-').replace('/', '-').replace('\\', '-')
+            output_path = Path(output_file)
+            base_name = output_path.stem
+            extension = output_path.suffix
+            output_dir = output_path.parent
+            prefixed_base = f"{safe_model_name}_{base_name}"
+            new_output_file = str(output_dir / f"en_{prefixed_base}{extension}")
+
             all_results = []
             failed_evaluations = []  # Theo dõi các đánh giá thất bại
             
@@ -235,7 +244,7 @@ class ChildChatEvaluator:
             if failed_evaluations:
                 logging.warning(f"Failed evaluations: {len(failed_evaluations)}")
                 # Lưu các đánh giá thất bại
-                failed_file = output_file.replace(".json", "_failed.json")
+                failed_file = new_output_file.replace(".json", "_failed.json")
                 with open(failed_file, "w", encoding="utf-8") as f:
                     json.dump(failed_evaluations, f, ensure_ascii=False, indent=2)
                 
@@ -243,17 +252,17 @@ class ChildChatEvaluator:
                 raise ValueError("No successful evaluations")
             
             # Lưu kết quả chi tiết
-            with open(output_file, "w", encoding="utf-8") as f:
+            with open(new_output_file, "w", encoding="utf-8") as f:
                 json.dump(all_results, f, ensure_ascii=False, indent=2)
             
             # Tạo dashboard
             self.export_dashboard_data(
                 all_results,
-                output_file.replace(".json", "_dashboard.html")
+                new_output_file.replace(".json", "_dashboard.html")
             )
             
             # Tạo báo cáo tổng hợp
-            self.generate_summary_report(all_results, output_file.replace(".json", "_summary.json"))
+            self.generate_summary_report(all_results, new_output_file.replace(".json", "_summary.json"))
                 
             return all_results, failed_evaluations
                 

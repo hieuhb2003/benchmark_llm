@@ -1,4 +1,8 @@
-python benchmark.py --input=/Users/oraichain/Desktop/Project/benchmark_llm/sample_input.json \
+python benchmark.py --input=/Users/oraichain/Desktop/Project/gradio/finetune_data_v3.json \
                     --output=/Users/oraichain/Desktop/Project/benchmark_llm \
-                    --model=qwen/qwen2.5-vl-72b-instruct:free \
+                    --model=deepseek/deepseek-chat \
                     --api_type=openrouter
+
+# python benchmark.py --input=/Users/oraichain/Desktop/Project/gradio/finetune_data_v3.json \
+#                     --output=/Users/oraichain/Desktop/Project/benchmark_llm \
+

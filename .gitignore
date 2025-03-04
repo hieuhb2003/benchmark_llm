@@ -6,3 +6,10 @@ evaluation_results_summary_viz_scores.png
 evaluation_results_summary_viz_heatmap.png
 evaluation_results_dashboard.html_scores.png
 evaluation_results_dashboard.html_heatmap.png
+4o-mini-score.html
+benchmark_llm/en_deepseek-deepseek-chat_evaluation_results_dashboard.html
+output_html
+output_html/*
+arena
+arena/*
+data
